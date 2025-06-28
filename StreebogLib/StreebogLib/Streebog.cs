@@ -6,6 +6,19 @@ namespace StreebogLib
 {
     public class Streebog
     {
+        public enum lengthHash
+        {
+            Length_256,
+            Length_512
+        };
+
+        private lengthHash outLength;
+
+        public Streebog(lengthHash length)
+        {
+            outLength = length;
+        }
+
         #region Constants (Sblock, A, tau, c)
         private byte[] sblock = {252, 238, 221, 17, 207, 110, 49, 22, 251, 196, 250, 218, 35, 197, 4, 77, 233, 119, 240,
                                 219, 147, 46, 153, 186, 23, 54, 241, 187, 20, 205, 95, 193, 249, 24, 101, 90, 226, 92, 239,
@@ -131,6 +144,7 @@ namespace StreebogLib
                 tmp = tmp.Reverse().ToArray();
                 bool[] bits = new bool[64];
                 (new BitArray(tmp)).CopyTo(bits, 0);
+                // Умножение на матрицу A в GF(2)
                 bits = bits.Reverse().ToArray();
                 for (int j = 0; j < 64; j++)
                 {
@@ -155,6 +169,221 @@ namespace StreebogLib
             byte[] pResult = P(lResult);
 
             return pResult;
+        }
+        #endregion
+
+        #region Функция сжатия и E-преобразование
+        private byte[] g(byte[] N, byte[] h, byte[] m)
+        {
+            // Шаг 1: h XOR N
+            byte[] result = new byte[64];
+            for (int i = 0; i < N.Length; i++)
+            {
+                result[i] = (byte)(h[i] ^ N[i]);
+            }
+
+            // Шаг 2: Применение S-P-L преобразований
+            result = S(result);
+            result = P(result);
+            result = L(result);
+
+            // Шаг 3: Шифрование E(result, m)
+            result = E(result, m);
+
+            // Шаг 4: XOR с h и m
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (byte)(h[i] ^ result[i]);
+            }
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (byte)(result[i] ^ m[i]);
+            }
+            return result;
+        }
+
+        //Преобразование E
+        private byte[] E(byte[] K, byte[] m)
+        {
+            byte[] result = new byte[64];
+            for (int i = 0; i < K.Length; i++)
+            {
+                result[i] = (byte)(K[i] ^ m[i]);
+            }
+            for (int i = 0; i < 12; i++)
+            {
+                result = S(result);
+                result = P(result);
+                result = L(result);
+                K = NewK(K, i);
+                for (int j = 0; j < result.Length; j++)
+                {
+                    result[j] = (byte)(K[j] ^ result[j]);
+                }
+            }
+            return result;
+        }
+        #endregion
+
+        #region Генерация ключа
+        private byte[] NewK(byte[] K, int number)
+        {
+            byte[] result = new byte[64];
+            for (int i = 0; i < K.Length; i++)
+            {
+                result[i] = (byte)(K[i] ^ c[number][i]);
+            }
+            result = S(result);
+            result = P(result);
+            result = L(result);
+            return result;
+        }
+        #endregion
+
+        #region Алгоритм генерации хеша
+        //Генерация хэша
+        public byte[] GetHash(byte[] M)
+        {
+            byte[] N_512 =
+            {
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00
+            };
+
+            //Инициализации
+            //    Устанавливаются начальные значения векторов h, N, Z в зависимости от длины выхода.
+            #region этап 1 (Инициализация)
+            // Инициализация
+            byte[] h = new byte[64];
+            byte[] N = new byte[64];
+            byte[] Z = new byte[64];
+
+            // Установка значения для IV
+            // Для длины 512
+            if (outLength == lengthHash.Length_512)
+            {
+                for (int i = 0; i < 64; i++)
+                {
+                    h[i] = 0x00;
+                }
+            }
+            else // Для длины 256
+            {
+                for (int i = 0; i < 64; i++)
+                {
+                    h[i] = 0x01;
+                }
+            }
+
+            // N = 0^512 IN V_512
+            for (int i = 0; i < 64; i++)
+            {
+                N[i] = 0x00;
+            }
+
+            // Z = 0^512 IN V_512
+            for (int i = 0; i < 64; i++)
+            {
+                Z[i] = 0x00;
+            }
+            #endregion
+
+            //Обработки сообщения
+            //    1. Сообщение разбивается на 64 - байтные блоки.Для каждого блока
+            //    2. Применяется функция сжатия g(N, h, m
+            //    3. Обновляется счетчик N(размер обработанных 
+            //    4. Обновляется контрольная сумма Z
+            #region этап 2 (Сжимающее преобразование)
+            int vr = 0;
+            int Mlength = M.Length;
+            while (Mlength >= 64)
+            {
+                byte[] m = new byte[64];
+                // m: M = M'||m
+                Array.Copy(M, Mlength - 64, m, 0, 64);
+                Mlength -= 64;
+
+                // g - сжимающая функция
+                //h = g(N, h, m);
+                vr = 0;
+                for (int i = 63; i >= 0; i--)
+                {
+                    vr = N[i] + N_512[i] + vr;
+                    N[i] = (byte)(vr % 256);
+                    vr /= 256;
+                }
+                vr = 0;
+                for (int j = 63; j >= 0; j--)
+                {
+                    vr = Z[j] + m[j] + vr;
+                    Z[j] = (byte)(vr % 256);
+                    vr /= 256;
+                }
+            }
+            #endregion
+
+            //Финализации
+            //    1. Для последнего неполного блока
+            //    2. Добавляется бит "1" и дополнение 
+            //    3. Выполняется финальный вызов g(N, h, m
+            //    4. Генерируется хеш указанной длины
+            #region этап 3
+            byte[] mNew = new byte[64];
+            if (Mlength < 64)
+            {
+                for (int i = 0; i < 64 - Mlength - 1; i++)
+                {
+                    mNew[i] = 0;
+                }
+                mNew[64 - Mlength - 1] = 0x01;
+                Array.Copy(M, 0, mNew, 64 - Mlength, Mlength);
+            }
+            else
+            {
+                Array.Copy(M, 0, mNew, 0, 64);
+            }
+            h = g(N, h, mNew);
+            byte[] lengthInt = BitConverter.GetBytes(Mlength * 8).Reverse().ToArray();
+            byte[] ostatok = new byte[64];
+            Array.Copy(lengthInt, 0, ostatok, 64 - lengthInt.Length, lengthInt.Length);
+            vr = 0;
+            for (int i = 63; i >= 0; i--)
+            {
+                vr = N[i] + ostatok[i] + vr;
+                N[i] = (byte)(vr % 256);
+                vr /= 256;
+            }
+            vr = 0;
+            for (int j = 63; j >= 0; j--)
+            {
+                vr = Z[j] + mNew[j] + vr;
+                Z[j] = (byte)(vr % 256);
+                vr /= 256;
+            }
+            byte[] zero = new byte[64];
+            for (int i = 0; i < 64; i++)
+            {
+                zero[i] = 0x00;
+            }
+            h = g(zero, h, N);
+            h = g(zero, h, Z);
+            if (outLength == lengthHash.Length_512)
+            {
+                return h;
+            }
+            else
+            {
+                byte[] hSmall = new byte[32];
+                Array.Copy(h, 0, hSmall, 0, 32);
+                return hSmall;
+            }
+            #endregion
         }
         #endregion
     }
