@@ -412,20 +412,42 @@ namespace StreebogLib
             {
                 // Создаем массив с нулями и одним байтом на нужной позиции
                 byte[] input = new byte[64];
-                input[position] = (byte)curByte;
+                input[position] = sblock[curByte];  // Apply S-box first
 
-                // Применяем S-P-L преобразования
-                byte[] sResult = S(input);
-                byte[] pResult = P(sResult);
+                // Применяем P-L преобразования (S уже применен)
+                byte[] pResult = P(input);
                 byte[] lResult = L(pResult);
 
                 table[curByte] = lResult;
             }
 
             // Сохраняем таблицу в JSON
-            string json = JsonSerializer.Serialize(table);
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(table, options);
             File.WriteAllText($"T_{position}.json", json);
         }
+        //private void GenerateAndSaveTable(int position)
+        //{
+        //    byte[][] table = new byte[256][];
+
+        //    for (int curByte = 0; curByte < 256; curByte++)
+        //    {
+        //        // Создаем массив с нулями и одним байтом на нужной позиции
+        //        byte[] input = new byte[64];
+        //        input[position] = (byte)curByte;
+
+        //        // Применяем S-P-L преобразования
+        //        byte[] sResult = S(input);
+        //        byte[] pResult = P(sResult);
+        //        byte[] lResult = L(pResult);
+
+        //        table[curByte] = lResult;
+        //    }
+
+        //    // Сохраняем таблицу в JSON
+        //    string json = JsonSerializer.Serialize(table);
+        //    File.WriteAllText($"T_{position}.json", json);
+        //}
 
         // Ускоренное SPL преобразование с использованием предвычисленных таблиц
         public byte[] FastLPS(byte[] data)
@@ -615,7 +637,7 @@ namespace StreebogLib
             {
                 Array.Copy(M, 0, mNew, 0, 64);
             }
-            h = g(N, h, mNew);
+            h = FastG(N, h, mNew);
             byte[] lengthInt = BitConverter.GetBytes(Mlength * 8).Reverse().ToArray();
             byte[] ostatok = new byte[64];
             Array.Copy(lengthInt, 0, ostatok, 64 - lengthInt.Length, lengthInt.Length);
