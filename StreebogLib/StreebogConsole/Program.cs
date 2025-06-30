@@ -77,7 +77,7 @@ namespace StreebogConsole
 
                 TestHashImplementation(
                     "Оптимизированная 256-bit",
-                    () => streebog256.GetHashOptimized(message),
+                    () => streebog256.GetHashFast(message),
                     hash256Lines[i]);
 
                 // Тестируем 512-битную версию
@@ -88,7 +88,7 @@ namespace StreebogConsole
 
                 TestHashImplementation(
                     "Оптимизированная 512-bit",
-                    () => streebog512.GetHashOptimized(message),
+                    () => streebog512.GetHashFast(message),
                     hash512Lines[i]);
             }
         }
