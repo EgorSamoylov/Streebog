@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Linq;
 using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Text.Json;
 
 namespace StreebogLib
 {
@@ -14,9 +17,13 @@ namespace StreebogLib
 
         private lengthHash outLength;
 
+        private List<byte[][]> _tables; // Предвычисленные таблицы для ускорения SPL
+
         public Streebog(lengthHash length)
         {
             outLength = length;
+            _tables = new List<byte[][]>();
+            LoadPrecomputedTables(); // Загрузка таблиц при инициализации
         }
 
         #region Constants (Sblock, A, tau, c)
@@ -108,9 +115,9 @@ namespace StreebogLib
         };
         #endregion
 
-        #region S, P, L, P + L -transformations
+        #region S, P, L - преобразования
         //преобразование S (подстановка)
-        private byte[] S(byte[] a)
+        public byte[] S(byte[] a)
         {
             byte[] result = new byte[64];
             for (int i = 0; i < 64; i++)
@@ -120,7 +127,7 @@ namespace StreebogLib
             return result;
         }
         //Преобразование P (перестановка)
-        private byte[] P(byte[] a)
+        public byte[] P(byte[] a)
         {
             byte[] b = new byte[64];
             for (int i = 0; i < 64; i++)
@@ -130,7 +137,7 @@ namespace StreebogLib
             return b;
         }
         //Преобразование L (умножение на матрицу)
-        private byte[] L(byte[] a)
+        public byte[] L(byte[] a)
         {
             byte[] result = new byte[64];
             for (int i = 0; i < 8; i++)
@@ -157,18 +164,6 @@ namespace StreebogLib
                 Array.Copy(tmp, 0, result, i * 8, 8);
             }
             return result;
-        }
-
-        // Преобразование LP (умножение на матрицу, затем перестановка)
-        private byte[] LP(byte[] a)
-        {
-            // Применяем преобразование L
-            byte[] lResult = L(a);
-
-            // Применяем преобразование P к результату L
-            byte[] pResult = P(lResult);
-
-            return pResult;
         }
         #endregion
 
