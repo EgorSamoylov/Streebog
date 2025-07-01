@@ -17,6 +17,11 @@ namespace StreebogLib
             _streebog = new Streebog(length);
         }
 
+        public byte[] GetHashInternal(byte[] input)
+        {
+            return _streebog.GetHash(input);
+        }
+
         // 2. Поиск коллизии базовым методом (перебор случайных сообщений)
         public (string, string) FindCollisionBasic(int n)
         {
