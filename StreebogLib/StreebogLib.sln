@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreebogLib", "StreebogLib\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreebogConsole", "StreebogConsole\StreebogConsole.csproj", "{87A54125-0598-4A14-AD5B-7C96EB787B9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreebogCollisionConsole", "StreebogCollisionConsole\StreebogCollisionConsole.csproj", "{DAE53F04-D6D8-4F04-93E6-1C52D8B66677}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{87A54125-0598-4A14-AD5B-7C96EB787B9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87A54125-0598-4A14-AD5B-7C96EB787B9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87A54125-0598-4A14-AD5B-7C96EB787B9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAE53F04-D6D8-4F04-93E6-1C52D8B66677}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAE53F04-D6D8-4F04-93E6-1C52D8B66677}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAE53F04-D6D8-4F04-93E6-1C52D8B66677}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAE53F04-D6D8-4F04-93E6-1C52D8B66677}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
